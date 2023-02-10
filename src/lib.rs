@@ -1,4 +1,4 @@
-
+#[cfg(feature = "blas")]
 pub mod hipblas {
     #[doc(inline)]
     pub use hipblas_sys::*;

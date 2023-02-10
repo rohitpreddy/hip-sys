@@ -4,6 +4,7 @@ Rust bindings for HIP
 # Dependencies
 
   - A ROCm platform ie a compatible AMD GPU
+    * `hipblas` can be accessed with the `blas` feature
     * Will compile without an AMD GPU, but device functions will fail
     * Currently CUDA platform support is not available (see cuda-sys https://github.com/rust-cuda/cuda-sys)
   - Install ROCm (see https://rocmdocs.amd.com/en/latest/Installation_Guide/Installation-Guide.html#deploying-rocm)
