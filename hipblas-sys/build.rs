@@ -34,11 +34,17 @@ fn main() {
     println!("cargo:rerun-if-env-changed=HIP_BLAS_PATH");
     println!("cargo:rerun-if-env-changed=HIPBLAS_PATH");
 
-    let (hip_path, hip_blas_path) = {
-        // Try to get HIP_PATH.
-        let hip_path =
-            try_get_path_from_var("HIP_PATH").unwrap_or_else(|| PathBuf::from(DEFAULT_HIP_PATH));
+    // Try to get HIP_PATH.
+    let hip_path =
+        try_get_path_from_var("HIP_PATH").unwrap_or_else(|| PathBuf::from(DEFAULT_HIP_PATH));
 
+    println!(
+        "cargo:warning={}: Using '{}' as HIP_PATH",
+        env!("CARGO_PKG_NAME"),
+        hip_path.display()
+    );
+
+    let hip_blas_path = {
         // Now try to get the hipblas path.
         let mut hip_blas_path = None;
         for hip_blas_path_var in ["HIP_BLAS_PATH", "HIPBLAS_PATH"] {
@@ -65,14 +71,9 @@ fn main() {
             }
         };
 
-        (hip_path, hip_blas_path)
+        hip_blas_path
     };
 
-    println!(
-        "cargo:warning={}: Using '{}' as HIP_PATH",
-        env!("CARGO_PKG_NAME"),
-        hip_path.display()
-    );
     println!(
         "cargo:warning={}: Using '{}' as HIP_BLAS_PATH",
         env!("CARGO_PKG_NAME"),
@@ -89,8 +90,9 @@ fn main() {
         // build up options for the resulting bindings.
         println!("cargo:rerun-if-changed=wrapper.h");
         let bindings = bindgen::Builder::default()
-            .raw_line("#![allow(warnings)]")
-            .raw_line("use std::fmt::Debug;")
+            .raw_line("#![allow(non_camel_case_types)]")
+            .raw_line("#![allow(non_upper_case_globals)]")
+            .raw_line("#![allow(non_snake_case)]")
             // The input header we would like to generate bindings for.
             .header("wrapper.h")
             .clang_arg(format!("-I{}", hip_blas_path.join("include").display()))
@@ -99,6 +101,10 @@ fn main() {
             .generate_block(false)
             .size_t_is_usize(true)
             .ctypes_prefix("::libc")
+            .derive_default(true)
+            .derive_eq(true)
+            .derive_ord(true)
+            .derive_hash(true)
             // Tell cargo to invalidate the built crate whenever any of the
             // included header files changed.
             .parse_callbacks(Box::new(bindgen::CargoCallbacks))
@@ -107,7 +113,7 @@ fn main() {
             // Unwrap the Result and panic on failure.
             .expect("Unable to generate bindings");
         bindings
-            .write_to_file("src/lib.rs")
+            .write_to_file("src/bindings.rs")
             .expect("Couldn't write bindings!");
     }
 }

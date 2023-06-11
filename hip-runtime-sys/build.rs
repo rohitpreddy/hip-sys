@@ -42,8 +42,9 @@ fn main() {
         // build up options for the resulting bindings.
         println!("cargo:rerun-if-changed=wrapper.h");
         let bindings = bindgen::Builder::default()
-            .raw_line("#![allow(warnings)]")
-            .raw_line("use std::fmt::Debug;")
+            .raw_line("#![allow(non_camel_case_types)]")
+            .raw_line("#![allow(non_upper_case_globals)]")
+            .raw_line("#![allow(non_snake_case)]")
             // The input header we would like to generate bindings for.
             .header("wrapper.h")
             .clang_arg(format!("-I{}", hip_path.join("include").display()))
@@ -51,6 +52,10 @@ fn main() {
             .generate_block(false)
             .size_t_is_usize(true)
             .ctypes_prefix("::libc")
+            .derive_default(true)
+            .derive_eq(true)
+            .derive_ord(true)
+            .derive_hash(true)
             // Tell cargo to invalidate the built crate whenever any of the
             // included header files changed.
             .parse_callbacks(Box::new(bindgen::CargoCallbacks))
@@ -59,7 +64,7 @@ fn main() {
             // Unwrap the Result and panic on failure.
             .expect("Unable to generate bindings");
         bindings
-            .write_to_file("src/lib.rs")
+            .write_to_file("src/bindings.rs")
             .expect("Couldn't write bindings!");
     }
 }
