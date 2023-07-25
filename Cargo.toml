@@ -4,12 +4,15 @@ version = "0.1.1"
 authors = ["charles-r-earp <charles.r.earp@gmail.com>"]
 edition = "2018"
 rust-version = "1.60"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/cjordan/hip-sys"
+description = "Bindings for HIP"
 
 [features]
 blas = ["hipblas-sys"]
 bindgen = ["hip-runtime-sys/bindgen", "hipblas-sys?/bindgen"]
 
 [dependencies]
-hip-runtime-sys = { path = "hip-runtime-sys" }
+hip-runtime-sys = { version = "0.1.0", path = "hip-runtime-sys" }
 
-hipblas-sys = { path = "hipblas-sys", optional = true }
+hipblas-sys = { version = "0.1.0", path = "hipblas-sys", optional = true }
