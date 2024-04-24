@@ -3,28 +3,19 @@ use std::{
     path::PathBuf,
 };
 
-const DEFAULT_HIP_PATH: &str = "/opt/rocm/hip";
-
 fn main() {
     println!("cargo:rerun-if-env-changed=HIP_PATH");
+    println!("cargo:rerun-if-env-changed=ROCM_PATH");
 
-    // Link to hip. If HIP_PATH isn't supplied, use a default.
-    let hip_path = match var("HIP_PATH") {
-        Ok(hip_path) => {
-            let pb = PathBuf::from(hip_path);
-            // Check that the path exists.
-            if !pb.exists() {
-                panic!(
-                    "{}: HIP_PATH is set to '{}', but that path doesn't exist",
-                    env!("CARGO_PKG_NAME"),
-                    pb.display()
-                );
-            }
-            pb
-        }
-        Err(VarError::NotPresent) => PathBuf::from(DEFAULT_HIP_PATH),
-        Err(e @ VarError::NotUnicode(_)) => panic!("{}: HIP_PATH: {}", env!("CARGO_PKG_NAME"), e),
-    };
+    let hip_path = root_candidates()
+        .find(|path| path.join("include").join("hip").join("hip_runtime_api.h").is_file())
+        .unwrap_or_else(|| {
+            panic!(
+                "Unable to find include path containing `hip/hip_runtime_api.h` under any of: {:?}.
+                Set the `HIP_PATH` environment variable such that `$HIP_PATH/include/hip/hip_runtime_api.h` exists.",
+                root_candidates().collect::<Vec<_>>()
+            )
+        });
 
     println!(
         "cargo:warning={}: Using '{}' as HIP_PATH",
@@ -48,6 +39,8 @@ fn main() {
             // The input header we would like to generate bindings for.
             .header("wrapper.h")
             .clang_arg(format!("-I{}", hip_path.join("include").display()))
+            .clang_arg(format!("-I{}", hip_path.join("include/hipify").display()))
+            .clang_arg("-D__HIP_PLATFORM_AMD__") // needed for rocm>6)
             .rustified_non_exhaustive_enum("hip.*")
             .generate_block(false)
             .size_t_is_usize(true)
@@ -67,4 +60,25 @@ fn main() {
             .write_to_file("src/bindings.rs")
             .expect("Couldn't write bindings!");
     }
+}
+
+/**
+ * Possible locations for HIP path root
+ */
+#[allow(unused)]
+fn root_candidates() -> impl Iterator<Item = PathBuf> {
+    let env_vars = [
+        "HIP_PATH",
+        "ROCM_PATH", // on rocm>6, HIP_PATH is ROCM_PATH
+    ].iter()
+        .map(std::env::var)
+        .filter_map(Result::ok)
+        .map(Into::<PathBuf>::into);
+
+    let roots = [
+        "/opt/rocm",
+        "/opt/rocm/hip",
+    ].iter()
+        .map(Into::<PathBuf>::into);
+    env_vars.chain(roots)
 }
