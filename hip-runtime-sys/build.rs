@@ -1,14 +1,11 @@
-use std::{
-    env::{var, VarError},
-    path::PathBuf,
-};
+use std::path::PathBuf;
 
 fn main() {
     println!("cargo:rerun-if-env-changed=HIP_PATH");
     println!("cargo:rerun-if-env-changed=ROCM_PATH");
 
     let hip_path = root_candidates()
-        .find(|path| path.join("include").join("hip").join("hip_runtime_api.h").is_file())
+        .find(|path| path.join("include/hip/hip_runtime_api.h").is_file())
         .unwrap_or_else(|| {
             panic!(
                 "Unable to find include path containing `hip/hip_runtime_api.h` under any of: {:?}.
