@@ -10,9 +10,12 @@ description = "Bindings for HIP"
 
 [features]
 blas = ["hipblas-sys"]
-bindgen = ["hip-runtime-sys/bindgen", "hipblas-sys?/bindgen"]
+blaslt = ["hipblaslt-sys"]
+bindgen = ["hip-runtime-sys/bindgen", "hipblas-sys?/bindgen", "hipblaslt-sys?/bindgen"]
 
 [dependencies]
 hip-runtime-sys = { version = "0.1.0", path = "hip-runtime-sys" }
 
 hipblas-sys = { version = "0.1.0", path = "hipblas-sys", optional = true }
+
+hipblaslt-sys = { version = "0.1.0", path = "hipblaslt-sys", optional = true }
